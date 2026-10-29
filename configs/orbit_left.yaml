@@ -1,0 +1,4 @@
+# Orbit to the left around the scene (main setting of the paper).
+camera: orbit_left
+total: 60      # degrees
+per_pass: 15   # at most 15 degrees per diffusion pass

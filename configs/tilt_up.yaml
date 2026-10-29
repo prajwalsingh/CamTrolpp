@@ -1,0 +1,4 @@
+# Tilt the camera upwards on the spot.
+camera: tilt_up
+total: 30      # degrees
+per_pass: 15

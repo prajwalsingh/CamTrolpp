@@ -1,0 +1,4 @@
+# Move the camera forward, towards the image centre.
+camera: zoom_in
+total: 0.5     # fraction of the depth at the image centre
+per_pass: 0.25

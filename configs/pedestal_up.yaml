@@ -1,0 +1,4 @@
+# Move the camera straight up.
+camera: pedestal_up
+total: 0.3     # fraction of the depth at the image centre
+per_pass: 0.15

@@ -1,0 +1,4 @@
+This folder is adapted from https://github.com/Stability-AI/generative-models
+(code license MIT, Copyright (c) 2023 Stability AI). Changes: epipolar
+attention in modules/attention.py and the camera arguments passed to it, and
+removal of training-only modules.

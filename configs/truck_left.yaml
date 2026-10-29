@@ -1,0 +1,4 @@
+# Slide the camera to the left.
+camera: truck_left
+total: 0.5     # fraction of the depth at the image centre
+per_pass: 0.25

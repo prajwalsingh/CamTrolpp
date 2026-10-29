@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CamTrol++</title>
+<meta name="description" content="CamTrol++ stabilizes camera-controlled novel view synthesis at inference time by bounding the camera motion of every diffusion pass.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="wrap nav-inner">
+    <a href="#top" class="brand">CamTrol<span>++</span></a>
+    <div class="nav-links">
+      <a href="#method">Method</a>
+      <a href="#orbit">Comparison</a>
+      <a href="#stepsize">Step size</a>
+      <a href="#results">Results</a>
+      <a href="#figures">Figures</a>
+      <a href="#videos">Videos</a>
+      <a href="#bibtex">BibTeX</a>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle colour theme">◐</button>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <h1>Stabilizing Camera-Controlled Novel View Synthesis at Inference Time</h1>
+    <div class="buttons">
+      <a class="btn btn-dark" href="https://www.alphaxiv.org/abs/2609.03639" target="_blank" rel="noopener">Paper</a>
+      <a class="btn btn-dark" href="https://github.com/prajwalsingh/CamTrolpp" target="_blank" rel="noopener">Code</a>
+      <a class="btn" href="#bibtex">BibTeX</a>
+    </div>
+
+    <div class="hero-viewer card">
+      <div class="tabs small-tabs" id="heroTabs">
+        <button class="active" data-scene="porte">Porte Saint-Martin</button>
+        <button data-scene="barcelona">Arc de Triomf</button>
+        <button data-scene="carrousel">Arc du Carrousel</button>
+        <button data-scene="lisbon">Terreiro do Paço</button>
+        <button data-scene="madrid">Puerta de Alcalá</button>
+      </div>
+      <div class="hero-grid" id="heroGrid">
+        <figure><div class="sprite" data-scene="porte" data-seq="ours15"></div><figcaption><b>CamTrol++</b> four 15° passes</figcaption></figure>
+        <figure><div class="sprite" data-scene="porte" data-seq="ours60"></div><figcaption>One 60° pass, same model</figcaption></figure>
+      </div>
+      <div class="scrub" data-group="hero">
+        <button class="play" aria-label="Play or pause">❚❚</button>
+        <input type="range" min="0" max="13" value="0" aria-label="Camera angle">
+        <span class="angle">0.0°</span>
+      </div>
+    </div>
+    <p class="tldr"><b>TL;DR</b> A frozen video diffusion model can only repair a limited amount of camera motion in one pass. CamTrol++ splits the camera path into passes of at most 15° and generates them one after another. Every pass stays in the range the backbone handles well, with no training.</p>
+
+    <div class="stats">
+      <div class="stat"><span class="num">2.86</span><span class="lbl">lowest epipolar error (EAE ×10<sup>-3</sup>) among CamTrol, NVS-Solver and WAVE</span></div>
+      <div class="stat"><span class="num">19.25 dB</span><span class="lbl">best held-out 3DGS PSNR, all 20 sequences registered by COLMAP</span></div>
+      <div class="stat"><span class="num">3.4×</span><span class="lbl">faster than CamTrol with the same 15° passes</span></div>
+      <div class="stat"><span class="num">0</span><span class="lbl">training, the diffusion backbone stays frozen</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="abstract">
+  <div class="wrap narrow">
+    <h2>Abstract</h2>
+    <p>Training-free, camera-controlled novel view synthesis from a single image using pre-trained video diffusion models often becomes unstable under large camera motion and long generation horizons. Existing approaches commonly combine several inference-time components, making it unclear which design choices are most important for stability. This work identifies the amount of camera motion handled by each diffusion pass as the main factor. CamTrol++ splits the camera path into passes that each cover at most a fixed rotation and generates them one after another, so that every pass stays within the range of motion the backbone handles well. A matched study, in which every setting is scored on the same poses of the same 60° orbit, shows that geometric error grows steadily with the arc per pass, while a single pass both loses geometry and tends to freeze the camera. Under one shared camera path, CamTrol++ achieves the lowest epipolar error and the best held-out 3D Gaussian Splatting reconstruction among CamTrol, NVS-Solver and WAVE, and reaches the quality of CamTrol with the same pass structure 3.4× faster. On real RealEstate10K camera motion it matches CamTrol at half the run time. The same procedure also improves 3D reconstruction with a second video backbone, LTX-Video. Geometry-constrained spatial attention, colour anchoring at pass boundaries and a registration-free warping pipeline that makes warping 6× faster complete the framework. The method remains effective for 56-frame generation and under controlled depth corruption. These results show that careful control of camera motion at inference time can substantially improve the stability of camera-controlled novel view synthesis without retraining or modifying the diffusion backbone.</p>
+  </div>
+</section>
+
+<section id="method" class="alt">
+  <div class="wrap">
+    <h2>Method</h2>
+    <p class="lead">Each pass lifts the latest frame to 3D, warps it along the poses of the pass, fills the holes, and lets a frozen Stable Video Diffusion model refine the clip. The last refined frame starts the next pass.</p>
+    <figure class="card method-fig"><img src="assets/images/method_overview.jpg" alt="CamTrol++ pipeline overview" loading="lazy"></figure>
+
+    <div class="pipeline" id="pipeline">
+      <button class="step active" data-i="0"><span>1</span>Depth</button>
+      <button class="step" data-i="1"><span>2</span>Warp</button>
+      <button class="step" data-i="2"><span>3</span>Inpaint</button>
+      <button class="step" data-i="3"><span>4</span>Refine</button>
+      <button class="step" data-i="4"><span>5</span>Anchor colour</button>
+      <button class="step" data-i="5"><span>6</span>Next pass</button>
+    </div>
+    <div class="card step-text" id="stepText"></div>
+
+    <div class="card calc">
+      <div class="calc-head">
+        <h3>How many passes?</h3>
+        <p>The number of passes follows from the rotation of the path, <code>K = ⌈Θ / 15°⌉</code>. Short paths stay in one pass and long paths are split.</p>
+      </div>
+      <div class="calc-body">
+        <div class="calc-controls">
+          <label>Total rotation Θ <output id="thetaOut">60°</output></label>
+          <input type="range" id="theta" min="5" max="120" step="1" value="60">
+          <label>Most rotation per pass <output id="limitOut">15°</output></label>
+          <input type="range" id="limit" min="5" max="60" step="5" value="15">
+          <div class="calc-result">
+            <div><span id="kOut">4</span><small>passes</small></div>
+            <div><span id="fOut">53</span><small>frames</small></div>
+            <div><span id="arcOut">15.0°</span><small>per pass</small></div>
+          </div>
+        </div>
+        <svg id="arcSvg" viewBox="0 0 320 200" role="img" aria-label="Camera path split into passes"></svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="orbit">
+  <div class="wrap">
+    <h2>Comparison on a 60° orbit</h2>
+    <p class="lead">All methods start from the same image, follow the same camera path with the same intrinsics, and are shown at the same 14 scored poses. Drag the slider to turn the camera.</p>
+    <div class="tabs" id="orbitTabs">
+      <button class="active" data-scene="porte">Porte Saint-Martin</button>
+      <button data-scene="alcala">Puerta de Alcalá</button>
+      <button data-scene="vicente">Puerta de San Vicente</button>
+      <button data-scene="brandenburg">Brandenburger Tor</button>
+    </div>
+    <div class="card">
+      <div class="quad" id="orbitGrid">
+        <figure class="ours"><div class="sprite" data-seq="ours15"></div><figcaption><b>CamTrol++</b></figcaption></figure>
+        <figure><div class="sprite" data-seq="camtrol15"></div><figcaption>CamTrol, 15° passes</figcaption></figure>
+        <figure><div class="sprite" data-seq="nvs"></div><figcaption>NVS-Solver</figcaption></figure>
+        <figure><div class="sprite" data-seq="wave"></div><figcaption>WAVE</figcaption></figure>
+      </div>
+      <div class="scrub" data-group="orbit">
+        <button class="play" aria-label="Play or pause">▶</button>
+        <input type="range" min="0" max="13" value="0" aria-label="Camera angle">
+        <span class="angle">0.0°</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stepsize" class="alt">
+  <div class="wrap">
+    <h2>Why bound the arc per pass</h2>
+    <p class="lead">Every setting follows the same 60° orbit and is scored on the same 14 poses of the same 20 scenes. Only the arc handled by each pass changes, from 10° (six passes) to 60° (one pass).</p>
+    <div class="card chart-card">
+      <div class="chart-head">
+        <div class="seg" id="metricSeg">
+          <button class="active" data-m="eae">Epipolar error</button>
+          <button data-m="zmr">Static pixels (ZMR)</button>
+          <button data-m="time">Run time</button>
+        </div>
+        <div class="legend" id="stepLegend"></div>
+      </div>
+      <div class="chart" id="stepChart"></div>
+      <p class="note" id="stepNote"></p>
+    </div>
+
+    <div class="tabs" id="stepTabs">
+      <button class="active" data-scene="brandenburg">Brandenburger Tor</button>
+      <button data-scene="porte">Porte Saint-Martin</button>
+      <button data-scene="alcala">Puerta de Alcalá</button>
+      <button data-scene="vicente">Puerta de San Vicente</button>
+    </div>
+    <div class="card">
+      <div class="quad" id="stepGrid">
+        <figure class="ours"><div class="sprite" data-seq="ours15"></div><figcaption><b>SVD</b>, four 15° passes</figcaption></figure>
+        <figure><div class="sprite" data-seq="ours60"></div><figcaption>SVD, one 60° pass</figcaption></figure>
+        <figure class="ours"><div class="sprite" data-seq="ltx15"></div><figcaption><b>LTX-Video</b>, four 15° passes</figcaption></figure>
+        <figure><div class="sprite" data-seq="ltx60"></div><figcaption>LTX-Video, one 60° pass</figcaption></figure>
+      </div>
+      <div class="scrub" data-group="step">
+        <button class="play" aria-label="Play or pause">▶</button>
+        <input type="range" min="0" max="13" value="0" aria-label="Camera angle">
+        <span class="angle">0.0°</span>
+      </div>
+    </div>
+    <p class="caption">With one large pass SVD freezes the camera and the facade melts into a flat texture, while LTX-Video fills new regions with noisy structures. With 15° passes both backbones turn around the monument. The LTX-Video rows use reprojection only.</p>
+  </div>
+</section>
+
+<section id="results">
+  <div class="wrap">
+    <h2>Results</h2>
+
+    <h3>Geometric consistency and 3D reconstruction</h3>
+    <p class="lead">60° orbit, 20 MegaScenes images, same 14 scored poses for every method. The right block fits 3D Gaussian Splatting to each sequence with the commanded poses and scores four held-out views. Click a column to rank the methods by it.</p>
+    <div class="card">
+      <div class="table-scroll"><table class="tbl sortable" id="orbitTable"></table></div>
+      <div class="bars" id="orbitBars"></div>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <h4>Held-out 3DGS views</h4>
+        <p class="small">Gaussian Splatting fitted to the generated frames, rendered at four views that were not used for fitting.</p>
+        <div class="tabs small-tabs" id="gsTabs">
+          <button class="active" data-scene="alcala">Puerta de Alcalá</button>
+          <button data-scene="brandenburg">Brandenburger Tor</button>
+          <button data-scene="porte">Porte Saint-Martin</button>
+        </div>
+        <div class="gs" id="gsView">
+          <figure class="ours"><div class="sprite gs-sprite" data-seq="gs15" data-n="4"></div><figcaption><b>15° passes</b></figcaption></figure>
+          <figure><div class="sprite gs-sprite" data-seq="gs60" data-n="4"></div><figcaption>One 60° pass</figcaption></figure>
+        </div>
+        <div class="scrub" data-group="gs" data-n="4" data-labels="view 2,view 5,view 8,view 11">
+          <button class="play" aria-label="Play or pause">▶</button>
+          <input type="range" min="0" max="3" value="0" aria-label="Held-out view">
+          <span class="angle">view 2</span>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Splitting helps every pipeline</h4>
+        <p class="small">Held-out 3DGS PSNR with commanded poses and the number of sequences COLMAP registers in full, single pass against 15° passes.</p>
+        <div class="split-list" id="splitList"></div>
+        <p class="small muted">MipNeRF360 (14 inputs): with 15° passes COLMAP registers 12 of 14 sequences against 3 of 14, and held-out SSIM rises from 0.317 to 0.444.</p>
+      </div>
+    </div>
+
+    <h3>Fidelity to real camera motion</h3>
+    <p class="lead">44 RealEstate10K clips. Each method receives the first frame and the camera poses of the clip, and its frames are compared with the real frames at six target poses. The camera rotates by only 10° over a whole clip in median, so the 15° bound gives one pass for 29 clips, two passes for 14 clips and six passes for the one clip that rotates by 50°.</p>
+    <div class="card"><div class="table-scroll"><table class="tbl" id="re10kTable"></table></div>
+      <p class="note">CamTrol++ matches CamTrol at about half the run time. NVS-Solver reaches the highest fidelity on these short paths through gradient guidance at every sampling step, at eight times the run time. The fixed six-pass row always uses six passes, whatever the rotation of the clip. Splitting a short path into more passes than the bound requires lowers PSNR by 1.3 dB, which is why the number of passes follows the rotation of the path.</p>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <h4>Components</h4>
+        <p class="small">Added one at a time at 15° per pass, same scenes and poses. The last two rows are two placements of LAB anchoring, each added to the epipolar attention row. The highlighted row is the configuration used for CamTrol++ in every other result.</p>
+        <div class="table-scroll"><table class="tbl compact" id="ablTable"></table></div>
+        <p class="small muted">Epipolar attention lowers EAE, Sampson distance and flicker at both step sizes. LAB anchoring at pass boundaries removes most colour drift and leaves geometry unchanged. Matching the inpainted frames as well gives the lowest colour drift at a small cost in EAE and Sampson distance, so boundary anchoring alone is a lighter variant with slightly lower geometric error. Against real RealEstate10K frames, boundary anchoring lowers the CIEDE2000 colour error from 9.53 to 8.97 and improves 39 of 44 clips.</p>
+      </div>
+      <div class="card">
+        <h4>Structured depth failures</h4>
+        <p class="small">EAE (×10<sup>-3</sup>) when the depth map is corrupted before warping. Lower is better.</p>
+        <div class="legend" id="depthLegend"></div>
+        <div class="chart" id="depthChart"></div>
+        <p class="small muted">A depth scale that is too small is the failure that matters. 15° passes limit its effect to +1.32, against +5.83 for a single pass, and keep a much lower EAE under every failure.</p>
+      </div>
+    </div>
+
+    <div class="speed card">
+      <div><span class="num">6.1×</span><span class="lbl">faster warping than CamTrol, by removing per-frame point cloud registration (11.4 s to 1.9 s per frame)</span></div>
+      <div><span class="num">3.2×</span><span class="lbl">faster per pass including SVD refinement, same GPU, resolution and frames</span></div>
+      <div><span class="num">56 frames</span><span class="lbl">of stable generation, up from the 14-frame window of a single pass</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="figures" class="alt">
+  <div class="wrap">
+    <h2>Figures from the paper</h2>
+    <p class="lead">The main figures of the current paper version, with the same numbering. S1 is from the supplementary material. Click a figure to open it at full size.</p>
+    <div class="tabs" id="figTabs"></div>
+    <figure class="card paper-fig">
+      <a id="figLink" href="#" target="_blank" rel="noopener"><img id="figImg" alt="" loading="lazy"></a>
+      <figcaption id="figCap"></figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="videos">
+  <div class="wrap">
+    <h2>56-frame videos</h2>
+    <p class="lead">Long camera paths generated with CamTrol++, next to WAVE and CamTrol on the same input. Videos play in sync.</p>
+    <div class="tabs" id="videoTabs"></div>
+    <div class="card"><div class="video-rows" id="videoRows"></div></div>
+  </div>
+</section>
+
+<section id="bibtex" class="alt">
+  <div class="wrap narrow">
+    <h2>BibTeX</h2>
+    <div class="bib card">
+      <button class="copy" id="copyBib">Copy</button>
+<pre id="bibText">@misc{singh2026stabilizingcameracontrollednovelview,
+      title={Stabilizing Camera-Controlled Novel View Synthesis at Inference Time},
+      author={Prajwal Singh and Arjun Badola and Seema Kumari and Hajime Nagahara and Shanmuganathan Raman},
+      year={2026},
+      eprint={2609.03639},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2609.03639},
+}</pre>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">CamTrol++ · 2026</div></footer>
+<div class="tooltip" id="tooltip" role="status"></div>
+<script src="script.js"></script>
+</body>
+</html>

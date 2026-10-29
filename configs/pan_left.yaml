@@ -1,0 +1,4 @@
+# Turn the camera to the left on the spot.
+camera: pan_left
+total: 45      # degrees
+per_pass: 15

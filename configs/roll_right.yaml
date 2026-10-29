@@ -1,0 +1,4 @@
+# Roll the camera clockwise around its viewing axis.
+camera: roll_right
+total: 30      # degrees
+per_pass: 15

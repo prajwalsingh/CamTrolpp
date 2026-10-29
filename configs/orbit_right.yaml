@@ -1,0 +1,4 @@
+# Orbit to the right around the scene.
+camera: orbit_right
+total: 60      # degrees
+per_pass: 15
