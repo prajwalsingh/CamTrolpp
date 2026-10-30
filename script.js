@@ -417,12 +417,15 @@ const PAPER_FIGS = [
   ["8", "Effect of step size", "fig8_step_size.jpg", "Every arc size follows the same 60° orbit and is scored on the same 14 poses of 20 scenes. Geometric error grows steadily with the arc, and only the single 60° pass freezes large parts of the image (high ZMR). LPIPS-next stays nearly flat. The yellow band marks the 15° default."],
   ["9", "Long horizon and depth", "fig9_longhorizon_depth.jpg", "<b>(a)</b> LPIPS-next, ZMR and edge density over an 84-frame extension on 20 scenes. Consistency and motion stay stable, while detail slowly fades as the sequence grows. <b>(b)</b> LPIPS-next under synthetic depth corruption. Quality degrades gradually and stays 52.3% below the WAVE baseline at severity 0.5."],
   ["S1", "Novel views on RealEstate10K", "figS1_re10k.jpg", "Input frame, real frame at a target pose and the view of each method for that pose. CamTrol++ matches the layout, colours and lighting of the real frame. CamTrol gives similar views on these short moves, while NVS-Solver and WAVE darken scenes and add clutter."],
+  ["S2", "Inpainted area against arc per pass", "figS2_inpainted_area.png", "Fraction of each warped frame handed to the inpainter, for the first pass of every setting of the step-size study, on 20 MegaScenes images with the same image, depth and poses. A 15° pass leaves 5.2% of each warped frame to the inpainter on average and 10.7% at its last frame, against 32.5% and 64.6% for one 60° pass. The area grows faster than the arc, which is why large passes lose geometry and freeze.", "560px"],
 ];
 (function paperFigures() {
   const tabs = $("#figTabs"), img = $("#figImg"), cap = $("#figCap"), link = $("#figLink");
   tabs.innerHTML = PAPER_FIGS.map((f, i) => `<button class="${i ? "" : "active"}" data-i="${i}">Fig. ${f[0]}</button>`).join("");
   const show = i => {
-    const [n, title, file, text] = PAPER_FIGS[i];
+    const [n, title, file, text, maxWidth] = PAPER_FIGS[i];
+    img.style.maxWidth = maxWidth || "";
+    img.style.margin = maxWidth ? "0 auto" : "";
     img.src = link.href = `assets/figures/${file}`;
     img.alt = `Figure ${n}, ${title}`;
     cap.innerHTML = `<b>Figure ${n}. ${title}.</b> ${text}`;
