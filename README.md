@@ -9,7 +9,7 @@ using a frozen Stable Video Diffusion model and no training. The camera path is
 split into short passes, each covering at most 15 degrees of rotation. For every
 pass the latest frame is lifted to 3D with monocular depth, warped to the poses
 of the pass, inpainted where the warp leaves holes, and refined by SVD with
-epipolar attention. The last frame of a pass, colour matched to the input,
+epipolar attention. The last frame of a pass, color matched to the input,
 starts the next pass.
 
 ## Setup
@@ -97,7 +97,7 @@ study and checks that the frames are identical to the original results, and
 camtrolpp/
   cameras.py    camera actions and pass splitting
   warp.py       depth, registration-free warping, inpainting
-  color.py      LAB colour anchoring
+  color.py      LAB color anchoring
   refine.py     SVD refinement of one pass
   pipeline.py   the full multi-pass generation
   metrics.py    evaluation metrics
