@@ -63,8 +63,8 @@ const ABL = {
   rows: [
     ["Small-step reprojection", "0.125", "2.87", "5107", "2.63"],
     ["+ Epipolar attention", "0.122", "2.81", "4678", "2.49"],
-    ["+ LAB at pass boundaries only", "0.122", "2.80", "4537", "1.08"],
-    ["+ LAB at pass boundaries<br>and on inpainted frames (CamTrol++)", "0.124", "2.86", "4869", "1.04"],
+    ["+ LAB at boundaries only", "0.122", "2.80", "4537", "1.08"],
+    ["+ LAB at boundaries<br>and inpainted frames (CamTrol++)", "0.124", "2.86", "4869", "1.04"],
   ],
   ours: 3,
 };
@@ -415,9 +415,9 @@ const PAPER_FIGS = [
   ["6", "3D reconstruction and colour", "fig6_3dgs_lab.jpg", "<b>(a)</b> Held-out views of 3D Gaussian Splatting fitted to CamTrol++ frames. 15° passes give a clean reconstruction, one 60° pass gives streaks and floaters. <b>(b)</b> Last frame of two RealEstate10K clips without and with LAB matching at pass boundaries. Matching keeps the colours close to the input."],
   ["7", "Pass size on two backbones", "fig7_stepsize.jpg", "The same 60° orbit as four 15° passes or one 60° pass, with SVD and with LTX-Video (reprojection only). With 15° passes both backbones turn around the monument. With one pass SVD freezes and the facade melts, and LTX-Video fills new regions with noisy structures."],
   ["8", "Effect of step size", "fig8_step_size.jpg", "Every arc size follows the same 60° orbit and is scored on the same 14 poses of 20 scenes. Geometric error grows steadily with the arc, and only the single 60° pass freezes large parts of the image (high ZMR). LPIPS-next stays nearly flat. The yellow band marks the 15° default."],
-  ["9", "Long horizon and depth", "fig9_longhorizon_depth.jpg", "<b>(a)</b> LPIPS-next, ZMR and edge density over an 84-frame extension on 20 scenes. Consistency and motion stay stable, while detail slowly fades as the sequence grows. <b>(b)</b> LPIPS-next under synthetic depth corruption. Quality degrades gradually and stays 52.3% below the WAVE baseline at severity 0.5."],
-  ["S1", "Novel views on RealEstate10K", "figS1_re10k.jpg", "Input frame, real frame at a target pose and the view of each method for that pose. CamTrol++ matches the layout, colours and lighting of the real frame. CamTrol gives similar views on these short moves, while NVS-Solver and WAVE darken scenes and add clutter."],
-  ["S2", "Inpainted area against arc per pass", "figS2_inpainted_area.png", "Fraction of each warped frame handed to the inpainter, for the first pass of every setting of the step-size study, on 20 MegaScenes images with the same image, depth and poses. A 15° pass leaves 5.2% of each warped frame to the inpainter on average and 10.7% at its last frame, against 32.5% and 64.6% for one 60° pass. The area grows faster than the arc, which is why large passes lose geometry and freeze.", "560px"],
+  ["9", "Long horizon and depth", "fig9_longhorizon_depth.jpg", "<b>(a)</b> LPIPS-next, ZMR and edge density over an 84-frame extension on 20 scenes. Consistency and motion stay stable through the standard 56 frames, and detail then slowly fades. Detail loss is the most common failure (13 of 20 scenes). <b>(b)</b> LPIPS-next under synthetic depth corruption on 20 scenes. It rises by about 16%, from 0.099 to 0.115, at severity 0.5 and stays well below the WAVE reference from the larger set of Table 1."],
+  ["10", "Novel views on RealEstate10K", "figS1_re10k.jpg", "Input frame, real frame at a target pose and the view of each method for that pose. CamTrol++ matches the layout, colours and lighting of the real frame. CamTrol gives similar views on these short moves, while NVS-Solver and WAVE darken scenes and add clutter."],
+  ["11", "Inpainted area against arc per pass", "figS2_inpainted_area.png", "Fraction of each warped frame handed to the inpainter, for the first pass of every setting of the step-size study, on 20 MegaScenes images with the same image, depth and poses. A 15° pass leaves 5.2% of each warped frame to the inpainter on average and 10.7% at its last frame, against 32.5% and 64.6% for one 60° pass. The area grows faster than the arc, which is why large passes lose geometry and freeze.", "560px"],
 ];
 (function paperFigures() {
   const tabs = $("#figTabs"), img = $("#figImg"), cap = $("#figCap"), link = $("#figLink");

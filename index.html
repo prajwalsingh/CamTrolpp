@@ -60,7 +60,7 @@
     <div class="stats">
       <div class="stat"><span class="num">2.86</span><span class="lbl">lowest epipolar error (EAE ×10<sup>-3</sup>) among CamTrol, NVS-Solver and WAVE</span></div>
       <div class="stat"><span class="num">19.25 dB</span><span class="lbl">best held-out 3DGS PSNR, all 20 sequences registered by COLMAP</span></div>
-      <div class="stat"><span class="num">3.4×</span><span class="lbl">faster than CamTrol with the same 15° passes</span></div>
+      <div class="stat"><span class="num">≥ 3.2×</span><span class="lbl">faster than CamTrol with the same 15° passes</span></div>
       <div class="stat"><span class="num">0</span><span class="lbl">training, the diffusion backbone stays frozen</span></div>
     </div>
   </div>
@@ -69,7 +69,7 @@
 <section id="abstract">
   <div class="wrap narrow">
     <h2>Abstract</h2>
-    <p>Training-free, camera-controlled novel view synthesis from a single image using pre-trained video diffusion models often becomes unstable under large camera motion and long generation horizons. Existing approaches commonly combine several inference-time components, making it unclear which design choices are most important for stability. This work identifies the amount of camera motion handled by each diffusion pass as the main factor. CamTrol++ splits the camera path into passes that each cover at most a fixed rotation and generates them one after another, so that every pass stays within the range of motion the backbone handles well. A matched study, in which every setting is scored on the same poses of the same 60° orbit, shows that geometric error grows steadily with the arc per pass, while a single pass both loses geometry and tends to freeze the camera. Under one shared camera path, CamTrol++ achieves the lowest epipolar error and the best held-out 3D Gaussian Splatting reconstruction among CamTrol, NVS-Solver and WAVE, and reaches the quality of CamTrol with the same pass structure 3.4× faster. On real RealEstate10K camera motion it matches CamTrol at half the run time. The same procedure also improves 3D reconstruction with a second video backbone, LTX-Video. Geometry-constrained spatial attention, colour anchoring at pass boundaries and a registration-free warping pipeline that makes warping 6× faster complete the framework. The method remains effective for 56-frame generation and under controlled depth corruption. These results show that careful control of camera motion at inference time can substantially improve the stability of camera-controlled novel view synthesis without retraining or modifying the diffusion backbone.</p>
+    <p>Training-free, camera-controlled novel view synthesis from a single image using pre-trained video diffusion models often becomes unstable under large camera motion and long generation horizons. Existing approaches commonly combine several inference-time components, making it unclear which design choices are most important for stability. This work identifies the amount of camera motion handled by each diffusion pass as the main factor. CamTrol++ splits the camera path into passes that each cover at most a fixed rotation and generates them one after another, so that every pass stays within the range of motion the backbone handles well. A matched study, in which every setting is scored on the same poses of the same 60° orbit, shows that geometric error grows steadily with the arc per pass, while a single pass both loses geometry and tends to freeze the camera. Under one shared camera path, CamTrol++ achieves the lowest epipolar error and the best held-out 3D Gaussian Splatting reconstruction among CamTrol, NVS-Solver and WAVE, and reaches the quality of CamTrol with the same pass structure at least 3.2× faster. On real RealEstate10K camera motion it matches CamTrol at half the run time. The same procedure also improves 3D reconstruction with a second video backbone, LTX-Video. Geometry-constrained spatial attention, colour anchoring at pass boundaries and a registration-free warping pipeline that makes warping 6× faster complete the framework. The method remains effective for 56-frame generation and under controlled depth corruption. These results show that careful control of camera motion at inference time can substantially improve the stability of camera-controlled novel view synthesis without retraining or modifying the diffusion backbone.</p>
   </div>
 </section>
 
@@ -153,7 +153,7 @@
       </div>
       <div class="chart" id="stepChart"></div>
       <p class="note" id="stepNote"></p>
-      <p class="note"><b>Why the arc matters.</b> On the same images, a 15° pass leaves 5.2% of each warped frame to the inpainter on average, against 32.5% for one 60° pass, and 64.6% of its last frame. A large arc hands the backbone frames that are mostly invented (Fig. S2 below).</p>
+      <p class="note"><b>Why the arc matters.</b> On the same images, a 15° pass leaves 5.2% of each warped frame to the inpainter on average, against 32.5% for one 60° pass, and 64.6% of its last frame. A large arc hands the backbone frames that are mostly invented (Fig. 11 below).</p>
     </div>
 
     <div class="tabs" id="stepTabs">
@@ -213,7 +213,7 @@
         <h4>Splitting helps every pipeline</h4>
         <p class="small">Held-out 3DGS PSNR with commanded poses and the number of sequences COLMAP registers in full, single pass against 15° passes.</p>
         <div class="split-list" id="splitList"></div>
-        <p class="small muted">MipNeRF360 (14 inputs): with 15° passes COLMAP registers 12 of 14 sequences against 3 of 14, and held-out SSIM rises from 0.317 to 0.444.</p>
+        <p class="small muted">MipNeRF360 (14 inputs): with 15° passes COLMAP registers 12 of 14 sequences against 3 of 14, held-out PSNR rises from 16.98 to 17.42 dB and SSIM from 0.317 to 0.444.</p>
       </div>
     </div>
 
@@ -228,7 +228,7 @@
         <h4>Components</h4>
         <p class="small">Added one at a time at 15° per pass, same scenes and poses. The last two rows are two placements of LAB anchoring, each added to the epipolar attention row. The highlighted row is the configuration used for CamTrol++ in every other result.</p>
         <div class="table-scroll"><table class="tbl compact" id="ablTable"></table></div>
-        <p class="small muted">Epipolar attention lowers EAE, Sampson distance and flicker at both step sizes. LAB anchoring at pass boundaries removes most colour drift and leaves geometry unchanged. Matching the inpainted frames as well gives the lowest colour drift at a small cost in EAE and Sampson distance, so boundary anchoring alone is a lighter variant with slightly lower geometric error. Against real RealEstate10K frames, boundary anchoring lowers the CIEDE2000 colour error from 9.53 to 8.97 and improves 39 of 44 clips.</p>
+        <p class="small muted">Epipolar attention lowers EAE, Sampson distance and flicker at both step sizes. LAB anchoring at pass boundaries removes most colour drift and leaves geometry unchanged. Matching the inpainted frames as well gives the lowest colour drift at a small cost in EAE and Sampson distance, so boundary anchoring alone is a lighter variant with slightly lower geometric error. In the full system the refinements leave geometry about where reprojection alone puts it, so the bound on the arc carries the geometric gain. Against real RealEstate10K frames, boundary anchoring lowers the CIEDE2000 colour error from 9.53 to 8.97 and improves 39 of 44 clips.</p>
       </div>
       <div class="card">
         <h4>Structured depth failures</h4>
@@ -250,7 +250,7 @@
 <section id="figures" class="alt">
   <div class="wrap">
     <h2>Figures from the paper</h2>
-    <p class="lead">The main figures of the current paper version, with the same numbering. S1 and S2 are from the supplementary material. Click a figure to open it at full size.</p>
+    <p class="lead">The main figures of the current paper version, with the same numbering. Figures 10 and 11 are from the appendix. Click a figure to open it at full size.</p>
     <div class="tabs" id="figTabs"></div>
     <figure class="card paper-fig">
       <a id="figLink" href="#" target="_blank" rel="noopener"><img id="figImg" alt="" loading="lazy"></a>
